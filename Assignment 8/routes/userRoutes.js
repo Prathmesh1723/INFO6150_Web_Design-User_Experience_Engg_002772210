@@ -8,7 +8,7 @@ const UserController = require('../controllers/UserController');
 
 router.get('/getAll', UserController.show);
 
-// router.put('/edit', UserController.update);
+router.put('/edit', UserController.update);
 
 // router.delete('/delete', UserController.deleteUser)
 

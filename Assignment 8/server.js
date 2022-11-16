@@ -92,16 +92,18 @@ MongoClient.connect(connectionString, { useUnifiedTopology: true })
   
       if (user) {
         const passCompare = await bcrypt.compare(req.body.password, user.password);
+        console.log(req.body.new_username)
         if (passCompare) {
     
           if (req.body.new_email != undefined && req.body.new_password != undefined && req.body.new_username != undefined) {
             res.status(400).send({ message: "Please provide either new username or new password parameters only!" });
           } 
-          else if (req.body.new_email != undefined && req.body.new_password == undefined && req.body.confirm_new_password == undefined) {
-            message: "User email cant be updated"
+          else if (req.body.new_email != undefined && req.body.new_password == undefined) {
+            res.status(404).send({
+            message: "User email can't be updated"
+          });
           }
           else if (req.body.new_email == undefined && req.body.new_password != undefined) {
-            // console.log("Update new password");
             if (checkPassword(req.body.new_password)) {
               const newPassword = await bcrypt.hash(req.body.new_password, saltRounds);
               User.findByIdAndUpdate(user._id, { password: newPassword }, { useFindAndModify: false })
@@ -110,7 +112,7 @@ MongoClient.connect(connectionString, { useUnifiedTopology: true })
                     res.status(404).send({
                       message: `Cannot update password with user id=${user._id}. User was not found!`
                     });
-                  } else res.send({ message: "User password was updated successfully." });
+                  } else res.send({ message: "User password updated successfully!" });
                 })
                 .catch(err => {
                   res.status(500).send({
@@ -118,26 +120,27 @@ MongoClient.connect(connectionString, { useUnifiedTopology: true })
                   });
                 });
             } else {
-              res.status(400).send({ message: "Please enter password correctly!" });
+              res.status(400).send({ message: "Please enter new password correctly!" });
             }
-          } else {
-            res.status(400).send({ message: "Please provide either the new email or new password!" });
+          }else if (req.body.new_password == undefined && req.body.new_username != undefined ) {
+            const newUsername = req.body.new_username
+            User.findByIdAndUpdate(user._id, { username: newUsername }, { useFindAndModify: false })
+            .then(data => {
+              if (!data) {
+                res.status(404).send({
+                  message: `Cannot update username with user id=${user._id}. User was not found!`
+                });
+              } else res.send({ message: "Username was updated successfully." });
+            })
+    }
+           else {
+            res.status(400).send({ message: "Please provide either the new username or new password!" });
           }
         } else {
           res.status(404).send({
             message: `Wrong Password. Please enter correct password`
           });
         }
-      } else if (req.body.new_password == undefined && req.body.new_username != undefined ) {
-              const newUsername = req.body.new_username
-              User.findByIdAndUpdate(user._id, { username: newUsername }, { useFindAndModify: false })
-              .then(data => {
-                if (!data) {
-                  res.status(404).send({
-                    message: `Cannot update password with user id=${user._id}. User was not found!`
-                  });
-                } else res.send({ message: "Username was updated successfully." });
-              })
       }else {
         res.status(404).send({
           message: `User was not found! Please check the email address.`
